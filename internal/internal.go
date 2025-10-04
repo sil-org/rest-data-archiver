@@ -3,13 +3,12 @@ package internal
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"log"
 	"log/syslog"
 	"os"
 	"time"
 
-	"github.com/silinternational/rest-data-archiver/alert"
+	"github.com/sil-org/rest-data-archiver/alert"
 )
 
 const (
@@ -32,7 +31,7 @@ func LoadConfig(configFile string) (AppConfig, error) {
 
 	log.Printf("Using config file: %s\n", configFile)
 
-	data, err := ioutil.ReadFile(configFile)
+	data, err := os.ReadFile(configFile)
 	if err != nil {
 		log.Printf("unable to read application config file %s, error: %s\n", configFile, err.Error())
 		return AppConfig{}, err

@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"testing"
@@ -11,7 +11,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// disable log output
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 	os.Exit(m.Run())
 }
 

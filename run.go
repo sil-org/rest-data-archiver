@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silinternational/rest-data-archiver/alert"
-	"github.com/silinternational/rest-data-archiver/aws"
-	"github.com/silinternational/rest-data-archiver/internal"
-	"github.com/silinternational/rest-data-archiver/restapi"
+	"github.com/sil-org/rest-data-archiver/alert"
+	"github.com/sil-org/rest-data-archiver/aws"
+	"github.com/sil-org/rest-data-archiver/internal"
+	"github.com/sil-org/rest-data-archiver/restapi"
 )
 
 var appConfig internal.AppConfig

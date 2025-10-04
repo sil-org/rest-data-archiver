@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/aws/aws-lambda-go/lambda"
 
-	rda "github.com/silinternational/rest-data-archiver"
+	rda "github.com/sil-org/rest-data-archiver"
 )
 
 type LambdaConfig struct {

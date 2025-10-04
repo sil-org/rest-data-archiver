@@ -1,8 +1,6 @@
-module github.com/silinternational/rest-data-archiver
+module github.com/sil-org/rest-data-archiver
 
 go 1.22
-
-replace github.com/silinternational/rest-data-archiver => ./
 
 require (
 	github.com/aws/aws-lambda-go v1.38.0
