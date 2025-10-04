@@ -1,10 +1,10 @@
 module github.com/sil-org/rest-data-archiver
 
-go 1.22
+go 1.25
 
 require (
 	github.com/aws/aws-lambda-go v1.38.0
-	github.com/aws/aws-sdk-go v1.51.9
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/stretchr/testify v1.8.2
 )
 
