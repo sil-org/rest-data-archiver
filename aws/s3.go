@@ -2,15 +2,15 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/syslog"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/sil-org/rest-data-archiver/internal"
 )
 
@@ -107,28 +107,31 @@ func (s *S3Adapter) Write(data []byte, eventLog chan<- internal.EventLogItem) er
 }
 
 func (s *S3Adapter) saveObject(data []byte, fileName string) error {
-	uploader, err := s.createS3Uploader()
+	client, err := s.newS3Client()
 	if err != nil {
-		return fmt.Errorf("error initializing S3: %s", err)
+		return fmt.Errorf("error initializing S3 client: %s", err)
 	}
 
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(s.S3Config.BucketName),
-		Key:    aws.String(fileName),
+	_, err = client.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket: &s.S3Config.BucketName,
+		Key:    &fileName,
 		Body:   bytes.NewReader(data),
 	})
 	if err != nil {
-		return fmt.Errorf("error saving data to %s/%s ... %s", s.S3Config.BucketName, fileName, err)
+		return fmt.Errorf("error saving data to %s/%s: %w", s.S3Config.BucketName, fileName, err)
 	}
 
 	return nil
 }
 
-func (s *S3Adapter) createS3Uploader() (*s3manager.Uploader, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(s.S3Config.AwsConfig.Region),
-		Credentials: credentials.NewStaticCredentials(
-			s.S3Config.AwsConfig.AccessKeyId, s.S3Config.AwsConfig.SecretAccessKey, ""),
-	})
-	return s3manager.NewUploader(sess), err
+func (s *S3Adapter) newS3Client() (*s3.Client, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion(s.S3Config.AwsConfig.Region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			s.S3Config.AwsConfig.AccessKeyId, s.S3Config.AwsConfig.SecretAccessKey, "")),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return s3.NewFromConfig(cfg), err
 }
