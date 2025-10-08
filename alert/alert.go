@@ -1,14 +1,15 @@
 package alert
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/aws/aws-sdk-go-v2/service/ses/types"
 )
 
 type Config struct {
@@ -19,80 +20,77 @@ type Config struct {
 	RecipientEmails    []string
 	AWSAccessKeyID     string
 	AWSSecretAccessKey string
+
+	sesClient *ses.Client
 }
 
-func SendEmail(config Config, body string) {
-	if config.AWSAccessKeyID == "" || config.AWSSecretAccessKey == "" {
+func SendEmail(c Config, body string) {
+	if c.AWSAccessKeyID == "" || c.AWSSecretAccessKey == "" {
 		log.Printf("AWS credentials not provided for email alerts")
 		return
 	}
 
-	charSet := config.CharSet
-
-	subject := config.SubjectText
-	subjContent := ses.Content{
-		Charset: &charSet,
-		Data:    &subject,
+	if err := c.setSESClient(); err != nil {
+		log.Printf("error loading AWS config: %s", err)
+		return
 	}
 
-	msgContent := ses.Content{
-		Charset: &charSet,
-		Data:    &body,
+	msg := types.Message{
+		Subject: &types.Content{
+			Charset: &c.CharSet,
+			Data:    &c.SubjectText,
+		},
+		Body: &types.Body{
+			Text: &types.Content{
+				Charset: &c.CharSet,
+				Data:    &body,
+			},
+		},
 	}
-
-	msgBody := ses.Body{
-		Text: &msgContent,
-	}
-
-	emailMsg := ses.Message{}
-	emailMsg.SetSubject(&subjContent)
-	emailMsg.SetBody(&msgBody)
 
 	// Only report the last email error
-	lastError := ""
-	badRecipients := []string{}
+	var lastError error
+	failures := []string{}
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range config.RecipientEmails {
-		err := sendAnEmail(emailMsg, address, config)
-		if err != nil {
-			lastError = err.Error()
-			badRecipients = append(badRecipients, address)
+	for _, to := range c.RecipientEmails {
+		if err := sendEmail(msg, to, c); err != nil {
+			lastError = err
+			failures = append(failures, to)
 		}
 	}
 
-	if lastError != "" {
-		addresses := strings.Join(badRecipients, ", ")
+	if lastError != nil {
+		addresses := strings.Join(failures, ", ")
 		log.Printf("Error sending email from '%s' to '%s': %s",
-			config.ReturnToAddr, addresses, lastError)
+			c.ReturnToAddr, addresses, lastError.Error())
 	}
 }
 
-func sendAnEmail(emailMsg ses.Message, recipient string, config Config) error {
-	recipients := []*string{&recipient}
-
-	input := &ses.SendEmailInput{
-		Destination: &ses.Destination{
-			ToAddresses: recipients,
+func sendEmail(msg types.Message, to string, c Config) error {
+	result, err := c.sesClient.SendEmail(context.Background(), &ses.SendEmailInput{
+		Destination: &types.Destination{
+			ToAddresses: []string{to},
 		},
-		Message: &emailMsg,
-		Source:  aws.String(config.ReturnToAddr),
-	}
-
-	cfg := &aws.Config{Region: aws.String(config.AWSRegion)}
-	if config.AWSAccessKeyID != "" && config.AWSSecretAccessKey != "" {
-		cfg.Credentials = credentials.NewStaticCredentials(config.AWSAccessKeyID, config.AWSSecretAccessKey, "")
-	}
-	sess, err := session.NewSession(cfg)
+		Message: &msg,
+		Source:  &c.ReturnToAddr,
+	})
 	if err != nil {
-		return fmt.Errorf("error creating AWS session: %s", err)
+		return fmt.Errorf("error sending email, result: %+v, error: %w", result, err)
 	}
+	log.Printf("alert message sent to %s, message ID: %s", to, *result.MessageId)
+	return nil
+}
 
-	svc := ses.New(sess)
-	result, err := svc.SendEmail(input)
+func (c *Config) setSESClient() error {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(c.AWSRegion),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			c.AWSAccessKeyID, c.AWSSecretAccessKey, "")),
+	)
 	if err != nil {
-		return fmt.Errorf("error sending email, result: %s, error: %s", result, err)
+		return err
 	}
-	log.Printf("alert message sent to %s, message ID: %s", recipient, *result.MessageId)
+	c.sesClient = ses.NewFromConfig(cfg)
 	return nil
 }
