@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log/syslog"
 
-	"github.com/silinternational/rest-data-archiver/alert"
+	"github.com/sil-org/rest-data-archiver/alert"
 )
 
 type SourceConfig struct {

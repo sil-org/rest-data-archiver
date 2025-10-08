@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
-	internal "github.com/silinternational/rest-data-archiver/internal"
+	"github.com/sil-org/rest-data-archiver/internal"
 )
 
 const (
@@ -132,7 +132,7 @@ func (r *RestAPI) getSalesforceOauthToken() (string, error) {
 		return "", err
 	}
 
-	bodyText, err := ioutil.ReadAll(resp.Body)
+	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("error reading response body: %s", err.Error())
 		return "", err
@@ -197,7 +197,7 @@ func (r *RestAPI) httpRequest(verb, url, body string, headers map[string]string)
 	}
 	defer resp.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read http response body: %s", err)
 	}

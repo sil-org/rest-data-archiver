@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/silinternational/rest-data-archiver/internal"
+	"github.com/sil-org/rest-data-archiver/internal"
 )
 
 const (

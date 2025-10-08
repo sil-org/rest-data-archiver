@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	rda "github.com/silinternational/rest-data-archiver"
+	rda "github.com/sil-org/rest-data-archiver"
 )
 
 func main() {
