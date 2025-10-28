@@ -1,14 +1,11 @@
 build:
-	docker-compose up -d app
+	docker compose run --rm app
 
 bash:
-	docker-compose run --rm app bash
+	docker compose run --rm app bash
 
-deploy:
-	docker-compose run --rm app sls deploy --verbose
+deploy: build
+	docker compose run --rm app cdk deploy --require-approval never
 
-info:
-	docker-compose run --rm app sls info
-
-remove:
-	docker-compose run --rm app sls remove
+destroy:
+	docker compose run --rm app cdk destroy lambda-example
